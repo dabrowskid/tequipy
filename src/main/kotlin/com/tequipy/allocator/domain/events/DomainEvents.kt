@@ -12,3 +12,9 @@ data class EquipmentRetired(
     val reason: String,
     override val occurredAt: Instant = Instant.now(),
 ) : DomainEvent
+
+data class AllocationCreated(
+    val allocationId: UUID,
+    val employeeId: UUID,
+    override val occurredAt: Instant = Instant.now(),
+) : DomainEvent

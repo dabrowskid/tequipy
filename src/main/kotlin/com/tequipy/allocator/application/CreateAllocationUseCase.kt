@@ -1,10 +1,12 @@
 package com.tequipy.allocator.application
 
 import com.tequipy.allocator.domain.allocation.AllocationPolicy
+import com.tequipy.allocator.domain.events.AllocationCreated
 import com.tequipy.allocator.domain.model.AllocationRequest
 import com.tequipy.allocator.domain.model.OutboxEntry
 import com.tequipy.allocator.infrastructure.persistence.AllocationRequestRepository
 import com.tequipy.allocator.infrastructure.persistence.OutboxRepository
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.util.UUID
@@ -13,6 +15,7 @@ import java.util.UUID
 class CreateAllocationUseCase(
     private val allocationRequestRepository: AllocationRequestRepository,
     private val outboxRepository: OutboxRepository,
+    private val eventPublisher: ApplicationEventPublisher,
 ) {
     @Transactional
     fun execute(employeeId: UUID, policy: AllocationPolicy): AllocationRequest {
@@ -30,6 +33,8 @@ class CreateAllocationUseCase(
                 ),
             )
         )
+
+        eventPublisher.publishEvent(AllocationCreated(allocationId = saved.id, employeeId = saved.employeeId))
 
         return saved
     }
