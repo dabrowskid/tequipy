@@ -65,3 +65,5 @@ out/
 
 ### Kotlin ###
 .kotlin
+
+.claude
