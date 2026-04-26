@@ -16,8 +16,6 @@ interface EquipmentRepository : JpaRepository<Equipment, UUID> {
     @Query("SELECT e FROM Equipment e WHERE (:type IS NULL OR e.type = :type) AND (:status IS NULL OR e.status = :status)")
     fun findByTypeAndStatus(type: EquipmentType?, status: EquipmentStatus?): List<Equipment>
 
-    fun findByStatusAndType(status: EquipmentStatus, type: EquipmentType): List<Equipment>
-
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT e FROM Equipment e WHERE e.status = :status AND e.type IN :types ORDER BY e.id")
     fun findAndLockByStatusAndTypeIn(

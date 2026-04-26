@@ -114,8 +114,7 @@ class AllocatorTest {
         val new = equipment(EquipmentType.KEYBOARD, purchaseDate = LocalDate.now().minusMonths(1))
 
         val policy = AllocationPolicy(
-            slots = listOf(SlotRequirement(EquipmentType.KEYBOARD)),
-            preferRecent = true,
+            slots = listOf(SlotRequirement(EquipmentType.KEYBOARD, preferRecent = true)),
         )
 
         val result = allocator.allocate(policy, listOf(old, new)) as AllocationResult.Success

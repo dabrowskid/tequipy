@@ -1,7 +1,7 @@
 package com.tequipy.allocator.api
 
 import com.tequipy.allocator.application.AllocationNotFoundException
-import com.tequipy.allocator.application.AllocationQueryService
+import com.tequipy.allocator.application.GetAllocationUseCase
 import com.tequipy.allocator.application.CancelAllocationUseCase
 import com.tequipy.allocator.application.ConfirmAllocationUseCase
 import com.tequipy.allocator.application.CreateAllocationUseCase
@@ -38,11 +38,12 @@ fun AllocationRequest.toResponse() = AllocationResponse(
 
 @RestController
 @RequestMapping("/allocations")
+@io.swagger.v3.oas.annotations.tags.Tag(name = "Allocations", description = "Create, query, confirm and cancel equipment allocation requests.")
 class AllocationController(
     private val createAllocationUseCase: CreateAllocationUseCase,
     private val confirmAllocationUseCase: ConfirmAllocationUseCase,
     private val cancelAllocationUseCase: CancelAllocationUseCase,
-    private val allocationQueryService: AllocationQueryService,
+    private val getAllocationUseCase: GetAllocationUseCase,
 ) {
     @PostMapping
     @ResponseStatus(HttpStatus.ACCEPTED)
@@ -51,7 +52,7 @@ class AllocationController(
 
     @GetMapping("/{id}")
     fun get(@PathVariable id: UUID): AllocationResponse =
-        allocationQueryService.findById(id).toResponse()
+        getAllocationUseCase.findById(id).toResponse()
 
     @PostMapping("/{id}/confirm")
     fun confirm(

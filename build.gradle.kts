@@ -4,6 +4,7 @@ plugins {
 	kotlin("plugin.jpa") version "2.3.20"
 	id("org.springframework.boot") version "4.0.5"
 	id("io.spring.dependency-management") version "1.1.7"
+	id("me.champeau.jmh") version "0.7.3"
 }
 
 group = "com.tequipy"
@@ -29,6 +30,7 @@ dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-flyway")
 	implementation("org.flywaydb:flyway-database-postgresql")
 	implementation("org.postgresql:postgresql")
+	implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.6")
 	testImplementation("org.springframework.boot:spring-boot-starter-test")
 	testImplementation("org.springframework.boot:spring-boot-resttestclient")
 	testImplementation("org.springframework.boot:spring-boot-starter-restclient")
@@ -47,4 +49,20 @@ kotlin {
 
 tasks.withType<Test> {
 	useJUnitPlatform()
+}
+
+jmh {
+	warmupIterations.set(2)
+	iterations.set(3)
+	fork.set(1)
+	timeOnIteration.set("2s")
+	warmup.set("1s")
+	resultFormat.set("TEXT")
+	benchmarkParameters.set(
+		mapOf(
+			"inventorySize" to project.objects.listProperty(String::class.java).apply {
+				set(listOf("1000", "5000", "10000"))
+			}
+		)
+	)
 }

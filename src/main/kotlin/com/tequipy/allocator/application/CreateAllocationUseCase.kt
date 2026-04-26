@@ -41,7 +41,7 @@ class CreateAllocationUseCase(
 }
 
 @Service
-class AllocationQueryService(private val repository: AllocationRequestRepository) {
+class GetAllocationUseCase(private val repository: AllocationRequestRepository) {
     fun findById(id: UUID): AllocationRequest = repository.findById(id).orElseThrow {
         AllocationNotFoundException(id)
     }

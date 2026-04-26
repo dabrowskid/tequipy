@@ -21,9 +21,16 @@ class EquipmentService(private val repository: EquipmentRepository) {
     @Transactional
     fun retire(id: UUID, reason: String): Equipment {
         val equipment = findById(id)
-        if (equipment.status == EquipmentStatus.RETIRED) return equipment
-        return repository.save(equipment.retire(reason))
+        return when (equipment.status) {
+            EquipmentStatus.RETIRED -> equipment
+            EquipmentStatus.RESERVED, EquipmentStatus.ASSIGNED ->
+                throw EquipmentInUseException(id, equipment.status)
+            EquipmentStatus.AVAILABLE -> repository.save(equipment.retire(reason))
+        }
     }
 }
 
 class EquipmentNotFoundException(id: UUID) : RuntimeException("Equipment $id not found")
+
+class EquipmentInUseException(val equipmentId: UUID, val currentStatus: EquipmentStatus) :
+    RuntimeException("Equipment $equipmentId cannot be retired while $currentStatus")

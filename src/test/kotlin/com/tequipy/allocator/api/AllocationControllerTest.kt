@@ -261,6 +261,44 @@ class AllocationControllerTest {
     }
 
     @Test
+    fun `retired equipment is excluded from allocation`() {
+        val computer = seedEquipment(EquipmentType.MAIN_COMPUTER)
+        val retireResponse = restTemplate.postForEntity(
+            "/equipments/${computer.id}/retire",
+            mapOf("reason" to "broken"),
+            Equipment::class.java,
+        )
+        assertEquals(HttpStatus.OK, retireResponse.statusCode)
+        assertEquals(EquipmentStatus.RETIRED, retireResponse.body?.status)
+
+        val request = CreateAllocationRequest(
+            employeeId = UUID.randomUUID(),
+            policy = AllocationPolicy(slots = listOf(SlotRequirement(type = EquipmentType.MAIN_COMPUTER))),
+        )
+        val id = restTemplate.postForEntity("/allocations", request, AllocationResponse::class.java).body!!.id
+
+        await().atMost(Duration.ofSeconds(5)).untilAsserted {
+            val state = restTemplate.getForEntity("/allocations/$id", AllocationResponse::class.java).body!!.state
+            assertEquals(AllocationState.FAILED, state)
+        }
+    }
+
+    @Test
+    fun `cannot retire equipment that is reserved`() {
+        val id = createAndAwaitReserved(EquipmentType.MAIN_COMPUTER)
+        val reserved = allocationRequestRepository.findById(id).orElseThrow()
+        val equipmentId = reserved.equipments.first().equipmentId
+
+        val response = restTemplate.exchange(
+            "/equipments/$equipmentId/retire",
+            HttpMethod.POST,
+            HttpEntity(mapOf("reason" to "broken")),
+            String::class.java,
+        )
+        assertEquals(HttpStatus.CONFLICT, response.statusCode)
+    }
+
+    @Test
     fun `Idempotency-Key reused on a different allocation returns 409`() {
         val id1 = createAndAwaitReserved(EquipmentType.MAIN_COMPUTER)
         val id2 = createAndAwaitReserved(EquipmentType.MAIN_COMPUTER)
