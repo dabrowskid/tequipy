@@ -1,0 +1,15 @@
+.git
+.gitignore
+.idea
+.vscode
+.gradle
+build
+out
+**/build
+**/out
+*.iml
+.DS_Store
+README.md
+PLAN.md
+openapi.yaml
+docker-compose*.yml
