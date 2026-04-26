@@ -3,7 +3,7 @@ package com.tequipy.allocator.domain.allocation
 import com.tequipy.allocator.domain.model.Equipment
 import com.tequipy.allocator.domain.model.EquipmentStatus
 import com.tequipy.allocator.domain.model.EquipmentType
-import org.junit.jupiter.api.Assertions.*
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import java.math.BigDecimal
 import java.time.Instant
@@ -37,9 +37,9 @@ class AllocatorTest {
         val pc = equipment(EquipmentType.MAIN_COMPUTER)
         val policy = AllocationPolicy(slots = listOf(SlotRequirement(EquipmentType.MAIN_COMPUTER)))
         val result = allocator.allocate(policy, listOf(pc))
-        assertTrue(result is AllocationResult.Success)
+        assertThat(result).isInstanceOf(AllocationResult.Success::class.java)
         val success = result as AllocationResult.Success
-        assertEquals(pc.id, success.assignments[0])
+        assertThat(success.assignments).containsEntry(0, pc.id)
     }
 
     @Test
@@ -60,15 +60,13 @@ class AllocatorTest {
         )
 
         val result = allocator.allocate(policy, listOf(monitorA, monitorB))
-        assertTrue(result is AllocationResult.Success, "Expected success but got $result")
+        assertThat(result).`as`("Expected success but got %s", result).isInstanceOf(AllocationResult.Success::class.java)
         val success = result as AllocationResult.Success
-        assertEquals(2, success.assignments.size)
-        // Both monitors should be assigned, one per slot
-        val assigned = success.assignments.values.toSet()
-        assertEquals(setOf(monitorA.id, monitorB.id), assigned)
-        // The high-condition monitor must be assigned to the high-condition slot (slot 0 requires ≥0.8)
-        assertEquals(monitorA.id, success.assignments[0])
-        assertEquals(monitorB.id, success.assignments[1])
+        assertThat(success.assignments)
+            .hasSize(2)
+            .containsEntry(0, monitorA.id)
+            .containsEntry(1, monitorB.id)
+        assertThat(success.assignments.values).containsExactlyInAnyOrder(monitorA.id, monitorB.id)
     }
 
     @Test
@@ -81,7 +79,7 @@ class AllocatorTest {
             )
         )
         val result = allocator.allocate(policy, listOf(pc))
-        assertTrue(result is AllocationResult.Failure, "Expected failure but got $result")
+        assertThat(result).`as`("Expected failure but got %s", result).isInstanceOf(AllocationResult.Failure::class.java)
     }
 
     @Test
@@ -91,7 +89,7 @@ class AllocatorTest {
             slots = listOf(SlotRequirement(EquipmentType.MAIN_COMPUTER, minCondition = 0.8))
         )
         val result = allocator.allocate(policy, listOf(pc))
-        assertTrue(result is AllocationResult.Failure)
+        assertThat(result).isInstanceOf(AllocationResult.Failure::class.java)
     }
 
     @Test
@@ -104,8 +102,7 @@ class AllocatorTest {
         )
 
         val result = allocator.allocate(policy, listOf(apple, dell)) as AllocationResult.Success
-        // Apple should win despite lower condition score due to brand preference bonus
-        assertEquals(apple.id, result.assignments[0])
+        assertThat(result.assignments).containsEntry(0, apple.id)
     }
 
     @Test
@@ -118,7 +115,7 @@ class AllocatorTest {
         )
 
         val result = allocator.allocate(policy, listOf(old, new)) as AllocationResult.Success
-        assertEquals(new.id, result.assignments[0])
+        assertThat(result.assignments).containsEntry(0, new.id)
     }
 
     @Test
@@ -131,8 +128,8 @@ class AllocatorTest {
         )
 
         val result = allocator.allocate(policy, listOf(m1, m2)) as AllocationResult.Success
-        assertEquals(2, result.assignments.size)
-        assertEquals(setOf(m1.id, m2.id), result.assignments.values.toSet())
+        assertThat(result.assignments).hasSize(2)
+        assertThat(result.assignments.values).containsExactlyInAnyOrder(m1.id, m2.id)
     }
 
     @Test
@@ -142,13 +139,13 @@ class AllocatorTest {
 
         val policy = AllocationPolicy(slots = listOf(SlotRequirement(EquipmentType.MOUSE)))
         val result = allocator.allocate(policy, listOf(active, retired)) as AllocationResult.Success
-        assertEquals(active.id, result.assignments[0])
+        assertThat(result.assignments).containsEntry(0, active.id)
     }
 
     @Test
     fun `empty policy returns empty success`() {
         val result = allocator.allocate(AllocationPolicy(emptyList()), listOf(equipment(EquipmentType.MOUSE)))
-        assertEquals(AllocationResult.Success(emptyMap()), result)
+        assertThat(result).isEqualTo(AllocationResult.Success(emptyMap()))
     }
 
     @Test
@@ -158,6 +155,6 @@ class AllocatorTest {
 
         val policy = AllocationPolicy(slots = listOf(SlotRequirement(EquipmentType.KEYBOARD)))
         val result = allocator.allocate(policy, listOf(good, fair)) as AllocationResult.Success
-        assertEquals(good.id, result.assignments[0])
+        assertThat(result.assignments).containsEntry(0, good.id)
     }
 }

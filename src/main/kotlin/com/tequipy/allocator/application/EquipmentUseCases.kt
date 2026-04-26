@@ -9,18 +9,30 @@ import org.springframework.transaction.annotation.Transactional
 import java.util.UUID
 
 @Service
-class EquipmentService(private val repository: EquipmentRepository) {
+class CreateEquipmentUseCase(private val repository: EquipmentRepository) {
+    fun execute(equipment: Equipment): Equipment = repository.save(equipment)
+}
 
-    fun create(equipment: Equipment): Equipment = repository.save(equipment)
+@Service
+class GetEquipmentUseCase(private val repository: EquipmentRepository) {
+    fun findById(id: UUID): Equipment =
+        repository.findById(id).orElseThrow { EquipmentNotFoundException(id) }
+}
 
-    fun findById(id: UUID): Equipment = repository.findById(id).orElseThrow { EquipmentNotFoundException(id) }
-
+@Service
+class ListEquipmentUseCase(private val repository: EquipmentRepository) {
     fun findAll(type: EquipmentType?, status: EquipmentStatus?): List<Equipment> =
         repository.findByTypeAndStatus(type, status)
+}
 
+@Service
+class RetireEquipmentUseCase(
+    private val repository: EquipmentRepository,
+    private val getEquipment: GetEquipmentUseCase,
+) {
     @Transactional
-    fun retire(id: UUID, reason: String): Equipment {
-        val equipment = findById(id)
+    fun execute(id: UUID, reason: String): Equipment {
+        val equipment = getEquipment.findById(id)
         return when (equipment.status) {
             EquipmentStatus.RETIRED -> equipment
             EquipmentStatus.RESERVED, EquipmentStatus.ASSIGNED ->

@@ -1,7 +1,7 @@
 package com.tequipy.allocator.api
 
 import com.tequipy.allocator.TestcontainersConfiguration
-import org.junit.jupiter.api.Assertions.assertTrue
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.resttestclient.TestRestTemplate
@@ -28,10 +28,11 @@ class OpenApiSpecExportTest {
     @Test
     fun `export OpenAPI yaml to repo root`() {
         val response = restTemplate.getForEntity("/v3/api-docs.yaml", String::class.java)
-        assertTrue(response.statusCode == HttpStatus.OK) { "expected 200, got ${response.statusCode}" }
+        assertThat(response.statusCode).isEqualTo(HttpStatus.OK)
         val body = response.body ?: error("no body")
-        assertTrue(body.contains("/allocations")) { "spec missing /allocations paths" }
-        assertTrue(body.contains("/equipments")) { "spec missing /equipments paths" }
+        assertThat(body)
+            .contains("/allocations")
+            .contains("/equipments")
 
         val target = Paths.get(System.getProperty("user.dir"), "openapi.yaml")
         Files.writeString(target, body)

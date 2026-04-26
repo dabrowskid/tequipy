@@ -1,8 +1,6 @@
 package com.tequipy.allocator.api
 
 import com.tequipy.allocator.TestcontainersConfiguration
-import com.tequipy.allocator.domain.allocation.AllocationPolicy
-import com.tequipy.allocator.domain.allocation.SlotRequirement
 import com.tequipy.allocator.domain.model.AllocationState
 import com.tequipy.allocator.domain.model.Equipment
 import com.tequipy.allocator.domain.model.EquipmentStatus
@@ -10,11 +8,9 @@ import com.tequipy.allocator.domain.model.EquipmentType
 import com.tequipy.allocator.infrastructure.persistence.AllocationRequestRepository
 import com.tequipy.allocator.infrastructure.persistence.EquipmentRepository
 import com.tequipy.allocator.infrastructure.persistence.IdempotencyKeyRepository
+import org.assertj.core.api.Assertions.assertThat
 import org.awaitility.Awaitility.await
 import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertNotNull
-import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.resttestclient.TestRestTemplate
@@ -55,7 +51,7 @@ class AllocationControllerTest {
             val pending = allocationRequestRepository.findAll().count {
                 it.state == AllocationState.PENDING
             }
-            assertEquals(0, pending)
+            assertThat(pending).isZero()
         }
         idempotencyKeyRepository.deleteAll()
         allocationRequestRepository.deleteAll()
@@ -66,19 +62,20 @@ class AllocationControllerTest {
     fun `POST allocations returns 202 with PENDING state`() {
         val request = CreateAllocationRequest(
             employeeId = UUID.randomUUID(),
-            policy = AllocationPolicy(
+            policy = AllocationPolicyDto(
                 slots = listOf(
-                    SlotRequirement(type = EquipmentType.MAIN_COMPUTER),
-                    SlotRequirement(type = EquipmentType.MONITOR, count = 2),
+                    SlotRequirementDto(type = EquipmentType.MAIN_COMPUTER),
+                    SlotRequirementDto(type = EquipmentType.MONITOR, count = 2),
                 )
             )
         )
 
         val response = restTemplate.postForEntity("/allocations", request, AllocationResponse::class.java)
 
-        assertEquals(HttpStatus.ACCEPTED, response.statusCode)
-        assertNotNull(response.body?.id)
-        assertEquals(AllocationState.PENDING, response.body?.state)
+        assertThat(response.statusCode).isEqualTo(HttpStatus.ACCEPTED)
+        assertThat(response.body).isNotNull()
+        assertThat(response.body?.id).isNotNull()
+        assertThat(response.body?.state).isEqualTo(AllocationState.PENDING)
     }
 
     @Test
@@ -86,7 +83,7 @@ class AllocationControllerTest {
         val employeeId = UUID.randomUUID()
         val request = CreateAllocationRequest(
             employeeId = employeeId,
-            policy = AllocationPolicy(slots = listOf(SlotRequirement(type = EquipmentType.KEYBOARD)))
+            policy = AllocationPolicyDto(slots = listOf(SlotRequirementDto(type = EquipmentType.KEYBOARD)))
         )
 
         val created = restTemplate.postForEntity("/allocations", request, AllocationResponse::class.java)
@@ -94,15 +91,15 @@ class AllocationControllerTest {
 
         val fetched = restTemplate.getForEntity("/allocations/$id", AllocationResponse::class.java)
 
-        assertEquals(HttpStatus.OK, fetched.statusCode)
-        assertEquals(id, fetched.body?.id)
-        assertEquals(employeeId, fetched.body?.employeeId)
+        assertThat(fetched.statusCode).isEqualTo(HttpStatus.OK)
+        assertThat(fetched.body?.id).isEqualTo(id)
+        assertThat(fetched.body?.employeeId).isEqualTo(employeeId)
     }
 
     @Test
     fun `GET allocations for unknown id returns 404`() {
         val response = restTemplate.getForEntity("/allocations/${UUID.randomUUID()}", Any::class.java)
-        assertEquals(HttpStatus.NOT_FOUND, response.statusCode)
+        assertThat(response.statusCode).isEqualTo(HttpStatus.NOT_FOUND)
     }
 
     @Test
@@ -113,10 +110,10 @@ class AllocationControllerTest {
 
         val request = CreateAllocationRequest(
             employeeId = UUID.randomUUID(),
-            policy = AllocationPolicy(
+            policy = AllocationPolicyDto(
                 slots = listOf(
-                    SlotRequirement(type = EquipmentType.MAIN_COMPUTER),
-                    SlotRequirement(type = EquipmentType.MONITOR, count = 2),
+                    SlotRequirementDto(type = EquipmentType.MAIN_COMPUTER),
+                    SlotRequirementDto(type = EquipmentType.MONITOR, count = 2),
                 )
             )
         )
@@ -126,18 +123,18 @@ class AllocationControllerTest {
 
         await().atMost(Duration.ofSeconds(5)).untilAsserted {
             val fetched = restTemplate.getForEntity("/allocations/$id", AllocationResponse::class.java)
-            assertEquals(AllocationState.RESERVED, fetched.body?.state)
+            assertThat(fetched.body?.state).isEqualTo(AllocationState.RESERVED)
         }
 
         val reservedCount = equipmentRepository.findAll().count { it.status == EquipmentStatus.RESERVED }
-        assertEquals(3, reservedCount)
+        assertThat(reservedCount).isEqualTo(3)
     }
 
     @Test
     fun `allocation transitions to FAILED when no matching equipment exists`() {
         val request = CreateAllocationRequest(
             employeeId = UUID.randomUUID(),
-            policy = AllocationPolicy(slots = listOf(SlotRequirement(type = EquipmentType.MAIN_COMPUTER)))
+            policy = AllocationPolicyDto(slots = listOf(SlotRequirementDto(type = EquipmentType.MAIN_COMPUTER)))
         )
 
         val created = restTemplate.postForEntity("/allocations", request, AllocationResponse::class.java)
@@ -145,7 +142,7 @@ class AllocationControllerTest {
 
         await().atMost(Duration.ofSeconds(5)).untilAsserted {
             val fetched = restTemplate.getForEntity("/allocations/$id", AllocationResponse::class.java)
-            assertEquals(AllocationState.FAILED, fetched.body?.state)
+            assertThat(fetched.body?.state).isEqualTo(AllocationState.FAILED)
         }
     }
 
@@ -158,7 +155,7 @@ class AllocationControllerTest {
             CompletableFuture.supplyAsync({
                 val request = CreateAllocationRequest(
                     employeeId = UUID.randomUUID(),
-                    policy = AllocationPolicy(slots = listOf(SlotRequirement(type = EquipmentType.MAIN_COMPUTER)))
+                    policy = AllocationPolicyDto(slots = listOf(SlotRequirementDto(type = EquipmentType.MAIN_COMPUTER)))
                 )
                 restTemplate.postForEntity("/allocations", request, AllocationResponse::class.java).body!!.id
             }, executor)
@@ -170,15 +167,15 @@ class AllocationControllerTest {
             val states = ids.map {
                 restTemplate.getForEntity("/allocations/$it", AllocationResponse::class.java).body!!.state
             }
-            assertTrue(states.all { it == AllocationState.RESERVED || it == AllocationState.FAILED }) {
-                "States not yet terminal: $states"
-            }
-            assertEquals(1, states.count { it == AllocationState.RESERVED })
-            assertEquals(1, states.count { it == AllocationState.FAILED })
+            assertThat(states)
+                .`as`("expected both states terminal but were %s", states)
+                .allMatch { it == AllocationState.RESERVED || it == AllocationState.FAILED }
+            assertThat(states.count { it == AllocationState.RESERVED }).isEqualTo(1)
+            assertThat(states.count { it == AllocationState.FAILED }).isEqualTo(1)
         }
 
         val reserved = equipmentRepository.findAll().count { it.status == EquipmentStatus.RESERVED }
-        assertEquals(1, reserved)
+        assertThat(reserved).isEqualTo(1)
     }
 
     @Test
@@ -189,10 +186,10 @@ class AllocationControllerTest {
             "/allocations/$id/confirm", null, AllocationResponse::class.java,
         )
 
-        assertEquals(HttpStatus.OK, response.statusCode)
-        assertEquals(AllocationState.CONFIRMED, response.body?.state)
+        assertThat(response.statusCode).isEqualTo(HttpStatus.OK)
+        assertThat(response.body?.state).isEqualTo(AllocationState.CONFIRMED)
         val assigned = equipmentRepository.findAll().count { it.status == EquipmentStatus.ASSIGNED }
-        assertEquals(1, assigned)
+        assertThat(assigned).isEqualTo(1)
     }
 
     @Test
@@ -204,22 +201,22 @@ class AllocationControllerTest {
             "/allocations/$id/confirm", null, AllocationResponse::class.java,
         )
 
-        assertEquals(HttpStatus.OK, second.statusCode)
-        assertEquals(AllocationState.CONFIRMED, second.body?.state)
+        assertThat(second.statusCode).isEqualTo(HttpStatus.OK)
+        assertThat(second.body?.state).isEqualTo(AllocationState.CONFIRMED)
     }
 
     @Test
     fun `confirm on PENDING returns 409`() {
         val request = CreateAllocationRequest(
             employeeId = UUID.randomUUID(),
-            policy = AllocationPolicy(slots = listOf(SlotRequirement(type = EquipmentType.MAIN_COMPUTER))),
+            policy = AllocationPolicyDto(slots = listOf(SlotRequirementDto(type = EquipmentType.MAIN_COMPUTER))),
         )
         val id = restTemplate.postForEntity("/allocations", request, AllocationResponse::class.java).body!!.id
 
         val response = restTemplate.postForEntity("/allocations/$id/confirm", null, Any::class.java)
-        assertTrue(response.statusCode == HttpStatus.CONFLICT || response.statusCode == HttpStatus.OK) {
-            "expected 409 (PENDING) or 200 (already FAILED) — got ${response.statusCode}"
-        }
+        assertThat(response.statusCode)
+            .`as`("expected 409 (PENDING) or 200 (already FAILED) — got %s", response.statusCode)
+            .isIn(HttpStatus.CONFLICT, HttpStatus.OK)
     }
 
     @Test
@@ -230,10 +227,10 @@ class AllocationControllerTest {
             "/allocations/$id/cancel", null, AllocationResponse::class.java,
         )
 
-        assertEquals(HttpStatus.OK, response.statusCode)
-        assertEquals(AllocationState.CANCELLED, response.body?.state)
+        assertThat(response.statusCode).isEqualTo(HttpStatus.OK)
+        assertThat(response.body?.state).isEqualTo(AllocationState.CANCELLED)
         val available = equipmentRepository.findAll().count { it.status == EquipmentStatus.AVAILABLE }
-        assertEquals(1, available)
+        assertThat(available).isEqualTo(1)
     }
 
     @Test
@@ -242,7 +239,7 @@ class AllocationControllerTest {
         restTemplate.postForEntity("/allocations/$id/confirm", null, AllocationResponse::class.java)
 
         val response = restTemplate.postForEntity("/allocations/$id/cancel", null, Any::class.java)
-        assertEquals(HttpStatus.CONFLICT, response.statusCode)
+        assertThat(response.statusCode).isEqualTo(HttpStatus.CONFLICT)
     }
 
     @Test
@@ -253,11 +250,11 @@ class AllocationControllerTest {
         val first = postWithIdempotencyKey("/allocations/$id/confirm", key)
         val second = postWithIdempotencyKey("/allocations/$id/confirm", key)
 
-        assertEquals(HttpStatus.OK, first.statusCode)
-        assertEquals(HttpStatus.OK, second.statusCode)
-        assertEquals(AllocationState.CONFIRMED, first.body?.state)
-        assertEquals(AllocationState.CONFIRMED, second.body?.state)
-        assertEquals(first.body?.id, second.body?.id)
+        assertThat(first.statusCode).isEqualTo(HttpStatus.OK)
+        assertThat(second.statusCode).isEqualTo(HttpStatus.OK)
+        assertThat(first.body?.state).isEqualTo(AllocationState.CONFIRMED)
+        assertThat(second.body?.state).isEqualTo(AllocationState.CONFIRMED)
+        assertThat(second.body?.id).isEqualTo(first.body?.id)
     }
 
     @Test
@@ -266,20 +263,20 @@ class AllocationControllerTest {
         val retireResponse = restTemplate.postForEntity(
             "/equipments/${computer.id}/retire",
             mapOf("reason" to "broken"),
-            Equipment::class.java,
+            EquipmentResponse::class.java,
         )
-        assertEquals(HttpStatus.OK, retireResponse.statusCode)
-        assertEquals(EquipmentStatus.RETIRED, retireResponse.body?.status)
+        assertThat(retireResponse.statusCode).isEqualTo(HttpStatus.OK)
+        assertThat(retireResponse.body?.status).isEqualTo(EquipmentStatus.RETIRED)
 
         val request = CreateAllocationRequest(
             employeeId = UUID.randomUUID(),
-            policy = AllocationPolicy(slots = listOf(SlotRequirement(type = EquipmentType.MAIN_COMPUTER))),
+            policy = AllocationPolicyDto(slots = listOf(SlotRequirementDto(type = EquipmentType.MAIN_COMPUTER))),
         )
         val id = restTemplate.postForEntity("/allocations", request, AllocationResponse::class.java).body!!.id
 
         await().atMost(Duration.ofSeconds(5)).untilAsserted {
             val state = restTemplate.getForEntity("/allocations/$id", AllocationResponse::class.java).body!!.state
-            assertEquals(AllocationState.FAILED, state)
+            assertThat(state).isEqualTo(AllocationState.FAILED)
         }
     }
 
@@ -295,7 +292,76 @@ class AllocationControllerTest {
             HttpEntity(mapOf("reason" to "broken")),
             String::class.java,
         )
-        assertEquals(HttpStatus.CONFLICT, response.statusCode)
+        assertThat(response.statusCode).isEqualTo(HttpStatus.CONFLICT)
+    }
+
+    @Test
+    fun `POST allocations rejects empty slots`() {
+        val body = mapOf(
+            "employeeId" to UUID.randomUUID().toString(),
+            "policy" to mapOf("slots" to emptyList<Any>()),
+        )
+        val response = restTemplate.postForEntity("/allocations", body, String::class.java)
+        assertThat(response.statusCode).isEqualTo(HttpStatus.BAD_REQUEST)
+        assertThat(response.body).contains("policy.slots")
+    }
+
+    @Test
+    fun `POST allocations rejects out-of-range count`() {
+        val body = mapOf(
+            "employeeId" to UUID.randomUUID().toString(),
+            "policy" to mapOf(
+                "slots" to listOf(
+                    mapOf("type" to "MAIN_COMPUTER", "count" to 1000)
+                )
+            ),
+        )
+        val response = restTemplate.postForEntity("/allocations", body, String::class.java)
+        assertThat(response.statusCode).isEqualTo(HttpStatus.BAD_REQUEST)
+        assertThat(response.body).contains("count")
+    }
+
+    @Test
+    fun `POST allocations rejects out-of-range minCondition`() {
+        val body = mapOf(
+            "employeeId" to UUID.randomUUID().toString(),
+            "policy" to mapOf(
+                "slots" to listOf(
+                    mapOf("type" to "MAIN_COMPUTER", "minCondition" to 1.5)
+                )
+            ),
+        )
+        val response = restTemplate.postForEntity("/allocations", body, String::class.java)
+        assertThat(response.statusCode).isEqualTo(HttpStatus.BAD_REQUEST)
+        assertThat(response.body).contains("minCondition")
+    }
+
+    @Test
+    fun `POST equipments rejects blank brand`() {
+        val body = mapOf(
+            "type" to "KEYBOARD",
+            "brand" to "",
+            "model" to "K1",
+            "conditionScore" to 0.9,
+            "purchaseDate" to LocalDate.now().minusMonths(1).toString(),
+        )
+        val response = restTemplate.postForEntity("/equipments", body, String::class.java)
+        assertThat(response.statusCode).isEqualTo(HttpStatus.BAD_REQUEST)
+        assertThat(response.body).contains("brand")
+    }
+
+    @Test
+    fun `POST equipments rejects future purchaseDate`() {
+        val body = mapOf(
+            "type" to "KEYBOARD",
+            "brand" to "Acme",
+            "model" to "K1",
+            "conditionScore" to 0.9,
+            "purchaseDate" to LocalDate.now().plusDays(7).toString(),
+        )
+        val response = restTemplate.postForEntity("/equipments", body, String::class.java)
+        assertThat(response.statusCode).isEqualTo(HttpStatus.BAD_REQUEST)
+        assertThat(response.body).contains("purchaseDate")
     }
 
     @Test
@@ -312,20 +378,20 @@ class AllocationControllerTest {
             String::class.java,
         )
 
-        assertEquals(HttpStatus.OK, first.statusCode)
-        assertEquals(HttpStatus.CONFLICT, second.statusCode)
+        assertThat(first.statusCode).isEqualTo(HttpStatus.OK)
+        assertThat(second.statusCode).isEqualTo(HttpStatus.CONFLICT)
     }
 
     private fun createAndAwaitReserved(type: EquipmentType): UUID {
         seedEquipment(type)
         val request = CreateAllocationRequest(
             employeeId = UUID.randomUUID(),
-            policy = AllocationPolicy(slots = listOf(SlotRequirement(type = type))),
+            policy = AllocationPolicyDto(slots = listOf(SlotRequirementDto(type = type))),
         )
         val id = restTemplate.postForEntity("/allocations", request, AllocationResponse::class.java).body!!.id
         await().atMost(Duration.ofSeconds(5)).untilAsserted {
             val state = restTemplate.getForEntity("/allocations/$id", AllocationResponse::class.java).body!!.state
-            assertEquals(AllocationState.RESERVED, state)
+            assertThat(state).isEqualTo(AllocationState.RESERVED)
         }
         return id
     }

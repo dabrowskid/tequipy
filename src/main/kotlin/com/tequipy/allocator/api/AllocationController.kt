@@ -8,18 +8,62 @@ import com.tequipy.allocator.application.CreateAllocationUseCase
 import com.tequipy.allocator.application.IdempotencyKeyConflictException
 import com.tequipy.allocator.application.InvalidAllocationStateException
 import com.tequipy.allocator.domain.allocation.AllocationPolicy
+import com.tequipy.allocator.domain.allocation.SlotRequirement
 import com.tequipy.allocator.domain.model.AllocationRequest
 import com.tequipy.allocator.domain.model.AllocationState
+import com.tequipy.allocator.domain.model.EquipmentType
+import jakarta.validation.Valid
+import jakarta.validation.constraints.DecimalMax
+import jakarta.validation.constraints.DecimalMin
+import jakarta.validation.constraints.Max
+import jakarta.validation.constraints.Min
+import jakarta.validation.constraints.NotEmpty
+import jakarta.validation.constraints.NotNull
+import jakarta.validation.constraints.Size
 import org.springframework.http.HttpStatus
 import org.springframework.http.ProblemDetail
+import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.annotation.*
 import java.net.URI
 import java.time.Instant
 import java.util.UUID
 
 data class CreateAllocationRequest(
-    val employeeId: UUID,
-    val policy: AllocationPolicy,
+    @field:NotNull
+    val employeeId: UUID?,
+    @field:NotNull
+    @field:Valid
+    val policy: AllocationPolicyDto?,
+)
+
+data class AllocationPolicyDto(
+    @field:NotEmpty
+    @field:Size(max = 20)
+    @field:Valid
+    val slots: List<SlotRequirementDto>,
+)
+
+data class SlotRequirementDto(
+    @field:NotNull
+    val type: EquipmentType?,
+    @field:DecimalMin("0.0") @field:DecimalMax("1.0")
+    val minCondition: Double = 0.0,
+    @field:Size(max = 20)
+    val preferredBrands: List<@Size(max = 100) String> = emptyList(),
+    val preferRecent: Boolean = false,
+    @field:Min(1) @field:Max(50)
+    val count: Int = 1,
+)
+
+private fun AllocationPolicyDto.toDomain(): AllocationPolicy =
+    AllocationPolicy(slots = slots.map { it.toDomain() })
+
+private fun SlotRequirementDto.toDomain(): SlotRequirement = SlotRequirement(
+    type = type!!,
+    minCondition = minCondition,
+    preferredBrands = preferredBrands,
+    preferRecent = preferRecent,
+    count = count,
 )
 
 data class AllocationResponse(
@@ -29,7 +73,7 @@ data class AllocationResponse(
     val createdAt: Instant,
 )
 
-fun AllocationRequest.toResponse() = AllocationResponse(
+private fun AllocationRequest.toResponse() = AllocationResponse(
     id = id,
     employeeId = employeeId,
     state = state,
@@ -47,8 +91,8 @@ class AllocationController(
 ) {
     @PostMapping
     @ResponseStatus(HttpStatus.ACCEPTED)
-    fun create(@RequestBody request: CreateAllocationRequest): AllocationResponse =
-        createAllocationUseCase.execute(request.employeeId, request.policy).toResponse()
+    fun create(@Valid @RequestBody request: CreateAllocationRequest): AllocationResponse =
+        createAllocationUseCase.execute(request.employeeId!!, request.policy!!.toDomain()).toResponse()
 
     @GetMapping("/{id}")
     fun get(@PathVariable id: UUID): AllocationResponse =
@@ -93,4 +137,16 @@ class AllocationExceptionHandler {
         ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.message ?: "Idempotency conflict").also {
             it.type = URI.create("https://tequipy.com/errors/idempotency-conflict")
         }
+
+    @ExceptionHandler(MethodArgumentNotValidException::class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    fun handleValidation(ex: MethodArgumentNotValidException): ProblemDetail {
+        val errors = ex.bindingResult.fieldErrors.associate { fe ->
+            fe.field to (fe.defaultMessage ?: "invalid")
+        }
+        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "Request validation failed").also {
+            it.type = URI.create("https://tequipy.com/errors/validation")
+            it.setProperty("errors", errors)
+        }
+    }
 }

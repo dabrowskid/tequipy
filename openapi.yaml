@@ -58,7 +58,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/Equipment"
+                  $ref: "#/components/schemas/EquipmentResponse"
     post:
       tags:
       - Equipments
@@ -87,7 +87,7 @@ paths:
           content:
             '*/*':
               schema:
-                $ref: "#/components/schemas/Equipment"
+                $ref: "#/components/schemas/EquipmentResponse"
   /equipments/{id}/retire:
     post:
       tags:
@@ -124,7 +124,7 @@ paths:
           content:
             '*/*':
               schema:
-                $ref: "#/components/schemas/Equipment"
+                $ref: "#/components/schemas/EquipmentResponse"
   /allocations:
     post:
       tags:
@@ -257,7 +257,7 @@ paths:
           content:
             '*/*':
               schema:
-                $ref: "#/components/schemas/Equipment"
+                $ref: "#/components/schemas/EquipmentResponse"
   /allocations/{id}:
     get:
       tags:
@@ -323,10 +323,16 @@ components:
           - MOUSE
         brand:
           type: string
+          maxLength: 100
+          minLength: 0
         model:
           type: string
+          maxLength: 100
+          minLength: 0
         conditionScore:
           type: number
+          maximum: 1.0
+          minimum: 0.0
         purchaseDate:
           type: string
           format: date
@@ -336,7 +342,7 @@ components:
       - model
       - purchaseDate
       - type
-    Equipment:
+    EquipmentResponse:
       type: object
       properties:
         id:
@@ -370,40 +376,32 @@ components:
         retiredAt:
           type: string
           format: date-time
-        version:
-          type: integer
-          format: int32
-        createdAt:
-          type: string
-          format: date-time
-        updatedAt:
-          type: string
-          format: date-time
       required:
       - brand
       - conditionScore
-      - createdAt
       - id
       - model
       - purchaseDate
       - status
       - type
-      - updatedAt
-      - version
     RetireEquipmentRequest:
       type: object
       properties:
         reason:
           type: string
+          maxLength: 500
+          minLength: 0
       required:
       - reason
-    AllocationPolicy:
+    AllocationPolicyDto:
       type: object
       properties:
         slots:
           type: array
           items:
-            $ref: "#/components/schemas/SlotRequirement"
+            $ref: "#/components/schemas/SlotRequirementDto"
+          maxItems: 20
+          minItems: 0
       required:
       - slots
     CreateAllocationRequest:
@@ -413,11 +411,11 @@ components:
           type: string
           format: uuid
         policy:
-          $ref: "#/components/schemas/AllocationPolicy"
+          $ref: "#/components/schemas/AllocationPolicyDto"
       required:
       - employeeId
       - policy
-    SlotRequirement:
+    SlotRequirementDto:
       type: object
       properties:
         type:
@@ -430,15 +428,21 @@ components:
         minCondition:
           type: number
           format: double
+          maximum: 1.0
+          minimum: 0.0
         preferredBrands:
           type: array
           items:
             type: string
+          maxItems: 20
+          minItems: 0
         preferRecent:
           type: boolean
         count:
           type: integer
           format: int32
+          maximum: 50
+          minimum: 1
       required:
       - count
       - minCondition
