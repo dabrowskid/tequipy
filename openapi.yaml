@@ -1,0 +1,472 @@
+openapi: 3.1.0
+info:
+  title: Tequipy Allocator API
+  description: Allocates equipment bundles to employees against a slot-based policy.
+  version: 0.1.0
+servers:
+- url: http://localhost:8080
+  description: Local
+tags:
+- name: Equipments
+  description: Manage the equipment inventory.
+- name: Allocations
+  description: "Create, query, confirm and cancel equipment allocation requests."
+paths:
+  /equipments:
+    get:
+      tags:
+      - Equipments
+      operationId: list
+      parameters:
+      - name: type
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - MAIN_COMPUTER
+          - MONITOR
+          - KEYBOARD
+          - MOUSE
+      - name: status
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - AVAILABLE
+          - RESERVED
+          - ASSIGNED
+          - RETIRED
+      responses:
+        "409":
+          description: Conflict
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Equipment"
+    post:
+      tags:
+      - Equipments
+      operationId: create
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateEquipmentRequest"
+        required: true
+      responses:
+        "409":
+          description: Conflict
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "201":
+          description: Created
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/Equipment"
+  /equipments/{id}/retire:
+    post:
+      tags:
+      - Equipments
+      operationId: retire
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RetireEquipmentRequest"
+        required: true
+      responses:
+        "409":
+          description: Conflict
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/Equipment"
+  /allocations:
+    post:
+      tags:
+      - Allocations
+      operationId: create_1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateAllocationRequest"
+        required: true
+      responses:
+        "409":
+          description: Conflict
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "202":
+          description: Accepted
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/AllocationResponse"
+  /allocations/{id}/confirm:
+    post:
+      tags:
+      - Allocations
+      operationId: confirm
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: Idempotency-Key
+        in: header
+        required: false
+        schema:
+          type: string
+      responses:
+        "409":
+          description: Conflict
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/AllocationResponse"
+  /allocations/{id}/cancel:
+    post:
+      tags:
+      - Allocations
+      operationId: cancel
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: Idempotency-Key
+        in: header
+        required: false
+        schema:
+          type: string
+      responses:
+        "409":
+          description: Conflict
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/AllocationResponse"
+  /equipments/{id}:
+    get:
+      tags:
+      - Equipments
+      operationId: get
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "409":
+          description: Conflict
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/Equipment"
+  /allocations/{id}:
+    get:
+      tags:
+      - Allocations
+      operationId: get_1
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "409":
+          description: Conflict
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/AllocationResponse"
+components:
+  schemas:
+    ProblemDetail:
+      type: object
+      properties:
+        type:
+          type: string
+          format: uri
+        title:
+          type: string
+        status:
+          type: integer
+          format: int32
+        detail:
+          type: string
+        instance:
+          type: string
+          format: uri
+        properties:
+          type: object
+          additionalProperties:
+            type: object
+    CreateEquipmentRequest:
+      type: object
+      properties:
+        type:
+          type: string
+          enum:
+          - MAIN_COMPUTER
+          - MONITOR
+          - KEYBOARD
+          - MOUSE
+        brand:
+          type: string
+        model:
+          type: string
+        conditionScore:
+          type: number
+        purchaseDate:
+          type: string
+          format: date
+      required:
+      - brand
+      - conditionScore
+      - model
+      - purchaseDate
+      - type
+    Equipment:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum:
+          - MAIN_COMPUTER
+          - MONITOR
+          - KEYBOARD
+          - MOUSE
+        brand:
+          type: string
+        model:
+          type: string
+        status:
+          type: string
+          enum:
+          - AVAILABLE
+          - RESERVED
+          - ASSIGNED
+          - RETIRED
+        conditionScore:
+          type: number
+        purchaseDate:
+          type: string
+          format: date
+        retiredReason:
+          type: string
+        retiredAt:
+          type: string
+          format: date-time
+        version:
+          type: integer
+          format: int32
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+      - brand
+      - conditionScore
+      - createdAt
+      - id
+      - model
+      - purchaseDate
+      - status
+      - type
+      - updatedAt
+      - version
+    RetireEquipmentRequest:
+      type: object
+      properties:
+        reason:
+          type: string
+      required:
+      - reason
+    AllocationPolicy:
+      type: object
+      properties:
+        slots:
+          type: array
+          items:
+            $ref: "#/components/schemas/SlotRequirement"
+      required:
+      - slots
+    CreateAllocationRequest:
+      type: object
+      properties:
+        employeeId:
+          type: string
+          format: uuid
+        policy:
+          $ref: "#/components/schemas/AllocationPolicy"
+      required:
+      - employeeId
+      - policy
+    SlotRequirement:
+      type: object
+      properties:
+        type:
+          type: string
+          enum:
+          - MAIN_COMPUTER
+          - MONITOR
+          - KEYBOARD
+          - MOUSE
+        minCondition:
+          type: number
+          format: double
+        preferredBrands:
+          type: array
+          items:
+            type: string
+        preferRecent:
+          type: boolean
+        count:
+          type: integer
+          format: int32
+      required:
+      - count
+      - minCondition
+      - preferRecent
+      - preferredBrands
+      - type
+    AllocationResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        employeeId:
+          type: string
+          format: uuid
+        state:
+          type: string
+          enum:
+          - PENDING
+          - RESERVED
+          - CONFIRMED
+          - CANCELLED
+          - FAILED
+        createdAt:
+          type: string
+          format: date-time
+      required:
+      - createdAt
+      - employeeId
+      - id
+      - state
