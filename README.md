@@ -167,11 +167,13 @@ so we can see p50 vs p99 — averages alone would have hidden the long tail.
 ## Running it
 
 ```sh
-docker compose up -d           # starts Postgres on :5432
+docker compose up -d           # builds the app and runs postgres and application 
 ./gradlew bootRun              # runs the API on :8080, applies Flyway migrations on startup
 ./gradlew test                 # full test suite (Testcontainers — Docker required)
 ./gradlew jmh                  # benchmarks; results in build/results/jmh/results.txt
 ```
+
+openapi.yaml can be used to play with the service 
 
 ## Allocation algorithm
 
