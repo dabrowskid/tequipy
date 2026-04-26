@@ -8,7 +8,4 @@ import java.util.UUID
 
 @Repository
 interface OutboxRepository : JpaRepository<OutboxEntry, UUID> {
-
-    @Query("SELECT o FROM OutboxEntry o WHERE o.publishedAt IS NULL ORDER BY o.createdAt ASC")
-    fun findUnpublished(): List<OutboxEntry>
 }

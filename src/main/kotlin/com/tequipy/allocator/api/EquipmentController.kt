@@ -7,34 +7,30 @@ import com.tequipy.allocator.application.RetireEquipmentUseCase
 import com.tequipy.allocator.domain.model.Equipment
 import com.tequipy.allocator.domain.model.EquipmentStatus
 import com.tequipy.allocator.domain.model.EquipmentType
+import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
-import jakarta.validation.constraints.DecimalMax
-import jakarta.validation.constraints.DecimalMin
-import jakarta.validation.constraints.NotBlank
-import jakarta.validation.constraints.NotNull
-import jakarta.validation.constraints.PastOrPresent
-import jakarta.validation.constraints.Size
+import jakarta.validation.constraints.*
 import org.springframework.http.HttpStatus
 import org.springframework.http.ProblemDetail
 import org.springframework.web.bind.annotation.*
 import java.math.BigDecimal
 import java.net.URI
 import java.time.LocalDate
-import java.util.UUID
+import java.util.*
 
 data class CreateEquipmentRequest(
     @field:NotNull
-    val type: EquipmentType?,
+    var type: EquipmentType?,
     @field:NotBlank @field:Size(max = 100)
     val brand: String,
     @field:NotBlank @field:Size(max = 100)
     val model: String,
     @field:NotNull
     @field:DecimalMin("0.0") @field:DecimalMax("1.0")
-    val conditionScore: BigDecimal?,
+    var conditionScore: BigDecimal?,
     @field:NotNull
     @field:PastOrPresent
-    val purchaseDate: LocalDate?,
+    var purchaseDate: LocalDate?,
 )
 
 data class RetireEquipmentRequest(
@@ -68,7 +64,7 @@ private fun Equipment.toResponse() = EquipmentResponse(
 
 @RestController
 @RequestMapping("/equipments")
-@io.swagger.v3.oas.annotations.tags.Tag(name = "Equipments", description = "Manage the equipment inventory.")
+@Tag(name = "Equipments", description = "Manage the equipment inventory.")
 class EquipmentController(
     private val createEquipmentUseCase: CreateEquipmentUseCase,
     private val getEquipmentUseCase: GetEquipmentUseCase,

@@ -7,5 +7,4 @@ import java.util.UUID
 
 @Repository
 interface AllocationRequestRepository : JpaRepository<AllocationRequest, UUID> {
-    fun findByEmployeeIdOrderByCreatedAtDesc(employeeId: UUID): List<AllocationRequest>
 }

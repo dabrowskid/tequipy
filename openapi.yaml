@@ -400,7 +400,7 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/SlotRequirementDto"
-          maxItems: 20
+          maxItems: 10
           minItems: 0
       required:
       - slots
@@ -434,14 +434,14 @@ components:
           type: array
           items:
             type: string
-          maxItems: 20
+          maxItems: 3
           minItems: 0
         preferRecent:
           type: boolean
         count:
           type: integer
           format: int32
-          maximum: 50
+          maximum: 5
           minimum: 1
       required:
       - count

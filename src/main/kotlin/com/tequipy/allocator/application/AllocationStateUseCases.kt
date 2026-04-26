@@ -131,6 +131,6 @@ class InvalidAllocationStateException(
 ) : RuntimeException("Cannot $operation allocation $allocationId in state $currentState")
 
 class IdempotencyKeyConflictException(
-    val key: String,
-    val operation: IdempotentOperation,
+    key: String,
+    operation: IdempotentOperation,
 ) : RuntimeException("Idempotency-Key '$key' already used for $operation on a different allocation")

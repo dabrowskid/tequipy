@@ -30,28 +30,28 @@ import java.util.UUID
 
 data class CreateAllocationRequest(
     @field:NotNull
-    val employeeId: UUID?,
+    var employeeId: UUID?,
     @field:NotNull
     @field:Valid
-    val policy: AllocationPolicyDto?,
+    var policy: AllocationPolicyDto?,
 )
 
 data class AllocationPolicyDto(
     @field:NotEmpty
-    @field:Size(max = 20)
+    @field:Size(max = 10)
     @field:Valid
     val slots: List<SlotRequirementDto>,
 )
 
 data class SlotRequirementDto(
     @field:NotNull
-    val type: EquipmentType?,
+    var type: EquipmentType?,
     @field:DecimalMin("0.0") @field:DecimalMax("1.0")
     val minCondition: Double = 0.0,
-    @field:Size(max = 20)
-    val preferredBrands: List<@Size(max = 100) String> = emptyList(),
+    @field:Size(max = 3)
+    val preferredBrands: List<@Size(max = 3) String> = emptyList(),
     val preferRecent: Boolean = false,
-    @field:Min(1) @field:Max(50)
+    @field:Min(1) @field:Max(5)
     val count: Int = 1,
 )
 
