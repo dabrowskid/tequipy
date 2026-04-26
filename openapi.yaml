@@ -39,14 +39,14 @@ paths:
           - ASSIGNED
           - RETIRED
       responses:
-        "409":
-          description: Conflict
+        "404":
+          description: Not Found
           content:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
-        "404":
-          description: Not Found
+        "409":
+          description: Conflict
           content:
             '*/*':
               schema:
@@ -70,14 +70,14 @@ paths:
               $ref: "#/components/schemas/CreateEquipmentRequest"
         required: true
       responses:
-        "409":
-          description: Conflict
+        "404":
+          description: Not Found
           content:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
-        "404":
-          description: Not Found
+        "409":
+          description: Conflict
           content:
             '*/*':
               schema:
@@ -107,14 +107,14 @@ paths:
               $ref: "#/components/schemas/RetireEquipmentRequest"
         required: true
       responses:
-        "409":
-          description: Conflict
+        "404":
+          description: Not Found
           content:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
-        "404":
-          description: Not Found
+        "409":
+          description: Conflict
           content:
             '*/*':
               schema:
@@ -137,14 +137,14 @@ paths:
               $ref: "#/components/schemas/CreateAllocationRequest"
         required: true
       responses:
-        "409":
-          description: Conflict
+        "404":
+          description: Not Found
           content:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
-        "404":
-          description: Not Found
+        "409":
+          description: Conflict
           content:
             '*/*':
               schema:
@@ -173,14 +173,14 @@ paths:
         schema:
           type: string
       responses:
-        "409":
-          description: Conflict
+        "404":
+          description: Not Found
           content:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
-        "404":
-          description: Not Found
+        "409":
+          description: Conflict
           content:
             '*/*':
               schema:
@@ -209,14 +209,14 @@ paths:
         schema:
           type: string
       responses:
-        "409":
-          description: Conflict
+        "404":
+          description: Not Found
           content:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
-        "404":
-          description: Not Found
+        "409":
+          description: Conflict
           content:
             '*/*':
               schema:
@@ -240,14 +240,14 @@ paths:
           type: string
           format: uuid
       responses:
-        "409":
-          description: Conflict
+        "404":
+          description: Not Found
           content:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
-        "404":
-          description: Not Found
+        "409":
+          description: Conflict
           content:
             '*/*':
               schema:
@@ -271,14 +271,14 @@ paths:
           type: string
           format: uuid
       responses:
-        "409":
-          description: Conflict
+        "404":
+          description: Not Found
           content:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
-        "404":
-          description: Not Found
+        "409":
+          description: Conflict
           content:
             '*/*':
               schema:
