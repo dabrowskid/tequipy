@@ -7,15 +7,15 @@ under a pessimistic lock, and the request transitions `PENDING → RESERVED` (or
 The reservation can later be `confirmed` (equipment moves to `ASSIGNED`) or `cancelled`
 (equipment goes back to `AVAILABLE`).
 
-# What's not done 
+# What's not done
 1. Replacing in-process event bus with broker
    Current implementation is not sufficient for production, since it's not resilient for random crashes. That being said, introducing a message broker  
-   adds complexity that may not necessarily be needed. I would consider transactional outbox based with postgres. With correctly used FOR UPDATE it can 
+   adds complexity that may not necessarily be needed. I would consider transactional outbox based with postgres. With correctly used FOR UPDATE it can
    provide great performance and guarantees needed for production system.
    (Quick workaround could be scheduled job that picks up allocations older then couple of minutes and retries processing)
-2. Security - assuming this service wouldn't be exposed directly to outside world it was ignored. 
+2. Security - assuming this service wouldn't be exposed directly to outside world it was ignored.
    Could be solved by exposing it via gateway, or using service mesh to add security.
-3. Observability: 
+3. Observability:
 - Structured logging (JSON, MDC trace/span IDs) — currently plain text.
 - Distributed tracing. Spring Boot 4 ships Micrometer Tracing - wiring an OTLP exporter is a few lines.
 - Domain metrics. Allocation throughput, p50/p99 of the matching call (we benchmark it offline but don't measure prod), PENDING → RESERVED lag, FAILED reason cardinality, equipment-pool size by status.
@@ -50,7 +50,7 @@ wins and reserves, the other re-reads after lock release, sees the equipment now
 and fails cleanly. The alternative — letting both proceed and resolving the conflict via
 the `unique(allocation_equipment.equipment_id)` index — would force ugly retry logic. The
 pessimistic lock is only held for the duration of the matching call (low milliseconds);
-the cost is acceptable given the rarity of true contention.
+the cost is acceptable assuming the rarity of true contention.
 
 ### Transactional outbox
 
@@ -85,9 +85,7 @@ JSONB policy column maps to a Kotlin data class with zero hand-written serialisa
 ### Strict separation between API DTOs and domain types
 
 Controllers accept and return only API-layer DTOs (`AllocationPolicyDto`,
-`SlotRequirementDto`, `EquipmentResponse`, …). The previous shape returned the JPA entity
-`Equipment` directly, which leaked `@Version`, `createdAt`, `updatedAt`, and the policy
-storage shape. Today the wire format can evolve without touching storage, and storage can
+`SlotRequirementDto`, `EquipmentResponse`, …) The wire format can evolve without touching storage, and storage can
 evolve without breaking clients. Domain enums (`EquipmentType`, `EquipmentStatus`,
 `AllocationState`) are deliberately *not* duplicated — they're values without behaviour,
 and mirroring them adds cost without strengthening the boundary.
@@ -173,7 +171,7 @@ docker compose up -d           # builds the app and runs postgres and applicatio
 ./gradlew jmh                  # benchmarks; results in build/results/jmh/results.txt
 ```
 
-openapi.yaml can be used to play with the service 
+openapi.yaml can be used to play with the service
 
 ## Allocation algorithm
 
